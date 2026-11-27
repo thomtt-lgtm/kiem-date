@@ -248,9 +248,9 @@ function scMsg(t){var e=$('scanMsg');if(e)e.textContent=t;}
 function openScan(r){
   SC.row=r;SC.busy=false;
   var o=document.createElement('div');o.id='scanBox';
-  o.innerHTML='<video id="scanVid" playsinline webkit-playsinline muted autoplay disablepictureinpicture></video><div class="sm" id="scanMsg">Đang mở camera...</div><div class="bt"><label>Chụp ảnh mã vạch<input id="scanPhoto" type="file" accept="image/*" capture="environment" hidden></label><button type="button" id="scanClose">Đóng</button></div>';
+  o.innerHTML='<video id="scanVid" playsinline webkit-playsinline muted autoplay disablepictureinpicture></video><div class="sm" id="scanMsg">Đang mở camera...</div><div class="bt"><button type="button" id="scanSnap">Quét ngay</button><label>Chụp ảnh mã vạch<input id="scanPhoto" type="file" accept="image/*" capture="environment" hidden></label><button type="button" id="scanClose">Đóng</button></div>';
   document.body.appendChild(o);
-  $('scanClose').onclick=closeScan;
+  $('scanClose').onclick=closeScan;$('scanSnap').onclick=function(){if(SC.snap)SC.snap();};
   $('scanPhoto').onchange=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;scMsg('Đang đọc ảnh...');
     var rd=new FileReader();rd.onload=function(){var img=new Image();img.onload=function(){
       var k=Math.min(1,1600/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
@@ -274,16 +274,32 @@ function startCam(){
       if(cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(function(){});}catch(e){}
     scMsg('Đưa mã vạch vào giữa màn hình, giữ cách 10-15cm, đủ sáng');
     var cv=document.createElement('canvas'),n=0;
+    function grab(sx,sy,sw,sh,maxW,enh){
+      var k=Math.min(2,maxW/sw);cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
+      var x=cv.getContext('2d');x.drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
+      if(enh){try{var im=x.getImageData(0,0,cv.width,cv.height),d=im.data,lo=255,hi=0,i,g;
+        for(i=0;i<d.length;i+=4){g=(d[i]*0.3+d[i+1]*0.59+d[i+2]*0.11);d[i]=g;if(g<lo)lo=g;if(g>hi)hi=g;}
+        var sc=hi>lo?255/(hi-lo):1;
+        for(i=0;i<d.length;i+=4){g=(d[i]-lo)*sc;d[i]=d[i+1]=d[i+2]=g;}
+        x.putImageData(im,0,0);}catch(e){}}
+      return cv;
+    }
+    function tryFrame(){
+      var W=v.videoWidth,H=v.videoHeight,cr=[[0,0,W,H,1280,false],[Math.round(W*.05),Math.round(H*.28),Math.round(W*.9),Math.round(H*.44),1600,true],[Math.round(W*.15),Math.round(H*.35),Math.round(W*.7),Math.round(H*.3),1400,true],[0,0,W,H,1280,true]];
+      var i=0;
+      return (function next(){
+        if(i>=cr.length)return Promise.resolve(null);
+        var a=cr[i++];
+        return decodeCanvas(grab(a[0],a[1],a[2],a[3],a[4],a[5])).then(function(c){return c||next();});
+      })();
+    }
+    SC.snap=function(){if(!v.videoWidth){scMsg('Camera chưa sẵn sàng, chạm vào màn hình rồi thử lại');return;}scMsg('Đang đọc khung hình...');tryFrame().then(function(c){if(c)gotCode(c);else scMsg('Chưa đọc được. Đưa mã vạch lại gần, giữ thẳng ngang, đủ sáng rồi bấm lại.');});};
     SC.timer=setInterval(function(){
-      if(SC.busy||!v.videoWidth||v.paused)return;
+      if(SC.busy)return;
+      if(!v.videoWidth||v.paused){scMsg('Camera chưa chạy ('+(v.videoWidth||0)+'px). Chạm vào màn hình để bật.');return;}
       SC.busy=true;n++;
-      var W=v.videoWidth,H=v.videoHeight,full=(n%2===0);
-      var sx=0,sy=0,sw=W,sh=H;
-      if(!full){sw=Math.round(W*0.9);sh=Math.round(H*0.45);sx=Math.round((W-sw)/2);sy=Math.round((H-sh)/2);}
-      var k=Math.min(1,1280/sw);cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
-      cv.getContext('2d').drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
-      decodeCanvas(cv).then(function(c){SC.busy=false;if(c)gotCode(c);});
-    },250);
+      tryFrame().then(function(c){SC.busy=false;if(c)gotCode(c);else scMsg('Đang quét... ('+n+') Đưa mã vạch vào giữa, cách 10-15cm');});
+    },300);
   }).catch(function(){scMsg('Không mở được camera trên trang này. Bấm "Chụp ảnh mã vạch" để chụp ảnh.');});
 }
 function closeScan(){
