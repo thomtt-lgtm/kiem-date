@@ -248,7 +248,7 @@ function scMsg(t){var e=$('scanMsg');if(e)e.textContent=t;}
 function openScan(r){
   SC.row=r;SC.busy=false;
   var o=document.createElement('div');o.id='scanBox';
-  o.innerHTML='<video id="scanVid" playsinline muted autoplay></video><div class="sm" id="scanMsg">Đang mở camera...</div><div class="bt"><label>Chụp ảnh mã vạch<input id="scanPhoto" type="file" accept="image/*" capture="environment" hidden></label><button type="button" id="scanClose">Đóng</button></div>';
+  o.innerHTML='<video id="scanVid" playsinline webkit-playsinline muted autoplay disablepictureinpicture></video><div class="sm" id="scanMsg">Đang mở camera...</div><div class="bt"><label>Chụp ảnh mã vạch<input id="scanPhoto" type="file" accept="image/*" capture="environment" hidden></label><button type="button" id="scanClose">Đóng</button></div>';
   document.body.appendChild(o);
   $('scanClose').onclick=closeScan;
   $('scanPhoto').onchange=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;scMsg('Đang đọc ảnh...');
@@ -264,15 +264,26 @@ function ensureDet(cb){
 }
 function startCam(){
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scMsg('Máy không mở được camera trực tiếp. Bấm "Chụp ảnh mã vạch".');return;}
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}).then(function(st){
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false}).then(function(st){
     SC.stream=st;var v=$('scanVid');if(!v){st.getTracks().forEach(function(t){t.stop();});return;}
-    v.srcObject=st;v.play();scMsg('Đưa mã vạch vào giữa màn hình');
-    var cv=document.createElement('canvas');
+    v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');v.muted=true;v.controls=false;v.disablePictureInPicture=true;
+    v.srcObject=st;
+    var pl=function(){var p=v.play();if(p&&p.catch)p.catch(function(){scMsg('Chạm vào màn hình một lần để bật camera');});};
+    v.onclick=pl;pl();
+    try{var tr=st.getVideoTracks()[0],cp=tr.getCapabilities?tr.getCapabilities():{};
+      if(cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(function(){});}catch(e){}
+    scMsg('Đưa mã vạch vào giữa màn hình, giữ cách 10-15cm, đủ sáng');
+    var cv=document.createElement('canvas'),n=0;
     SC.timer=setInterval(function(){
-      if(SC.busy||!v.videoWidth)return;
-      var k=Math.min(1,900/v.videoWidth);cv.width=Math.round(v.videoWidth*k);cv.height=Math.round(v.videoHeight*k);cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
-      SC.busy=true;decodeCanvas(cv).then(function(c){SC.busy=false;if(c)gotCode(c);});
-    },350);
+      if(SC.busy||!v.videoWidth||v.paused)return;
+      SC.busy=true;n++;
+      var W=v.videoWidth,H=v.videoHeight,full=(n%2===0);
+      var sx=0,sy=0,sw=W,sh=H;
+      if(!full){sw=Math.round(W*0.9);sh=Math.round(H*0.45);sx=Math.round((W-sw)/2);sy=Math.round((H-sh)/2);}
+      var k=Math.min(1,1280/sw);cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
+      cv.getContext('2d').drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
+      decodeCanvas(cv).then(function(c){SC.busy=false;if(c)gotCode(c);});
+    },250);
   }).catch(function(){scMsg('Không mở được camera trên trang này. Bấm "Chụp ảnh mã vạch" để chụp ảnh.');});
 }
 function closeScan(){
