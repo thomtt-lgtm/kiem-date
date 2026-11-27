@@ -46,7 +46,7 @@
   [hidden]{display:none!important}
 </style>
 <style>@keyframes bl{0%,100%{background:#fdecea;border-color:#e24b4a}50%{background:#f5b5ae;border-color:#a32d2d}}.al{border:2px solid #e24b4a;border-radius:12px;padding:12px 14px;animation:bl 1.2s infinite;color:#501313}.al b{font-weight:500}.ai{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:0.5px solid #f09595;font-size:14px}.ai .n{flex:1}.ai button{border:0.5px solid #a32d2d;background:#fff;color:#791F1F;border-radius:8px;padding:5px 10px;font-size:13px}</style>
-<style>.scan{display:block;margin:6px 0;padding:14px 12px;border:0;background:#2e7d32;color:#fff;border-radius:10px;font-size:16px;font-weight:500;text-align:center}#scanBox{position:fixed;inset:0;background:#000;z-index:99;display:flex;flex-direction:column}#scanBox video{width:100%;flex:1;min-height:0;object-fit:cover}#scanBox .sm{color:#fff;padding:10px 14px;font-size:14px;text-align:center}#scanBox .bt{display:flex;gap:10px;padding:0 14px 16px}#scanBox .bt>*{flex:1;padding:12px;border-radius:10px;border:0;font-size:15px;text-align:center;background:#fff;color:#111}</style>
+<style>.scan{display:block;margin:6px 0;padding:14px 12px;border:0;background:#2e7d32;color:#fff;border-radius:10px;font-size:16px;font-weight:500;text-align:center}#scanBox{position:fixed;inset:0;background:rgba(15,25,40,.72);z-index:99;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:14px}#scanBox .sh{background:#fff;border-radius:16px;padding:12px;width:100%;max-width:520px;display:flex;flex-direction:column;gap:10px;box-shadow:0 10px 40px rgba(0,0,0,.4)}#scanBox .tt{font-weight:600;font-size:15px;color:#1c2722}#scanBox .vb{position:relative;width:100%;aspect-ratio:4/3;background:#000;border-radius:12px;overflow:hidden}#scanBox video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}#scanBox .fr{position:absolute;left:10%;right:10%;top:30%;bottom:30%;border:3px solid #22c55e;border-radius:10px;box-shadow:0 0 0 999px rgba(0,0,0,.25);pointer-events:none}#scanBox .ctl{display:flex;gap:8px}#scanBox .ctl button{flex:1;padding:9px 4px;border:1px solid #d9e3dd;border-radius:10px;background:#f6f8f7;font-size:14px;color:#1c2722}#scanBox .sm{padding:9px 12px;border-radius:10px;background:#eef2ef;color:#333;font-size:14px;text-align:center}#scanBox .sm.ok{background:#e3f2e9;color:#1b7a43;font-weight:600}#scanBox .big{padding:14px;border:0;border-radius:12px;background:#1f4e79;color:#fff;font-size:17px;font-weight:500}#scanBox .bt{display:flex;gap:8px}#scanBox .bt>*{flex:1;padding:11px;border-radius:10px;border:1px solid #d9e3dd;font-size:14px;text-align:center;background:#fff;color:#1c2722}</style>
 </head>
 <body>
 <div class="wrap">
@@ -244,17 +244,26 @@ function decodeCanvas(cv){
   if(!ZX)return Promise.resolve(null);
   return Promise.resolve(zxDecode(cv));
 }
-function scMsg(t){var e=$('scanMsg');if(e)e.textContent=t;}
+function scMsg(t,ok){var e=$('scanMsg');if(e){e.textContent=t;e.className='sm'+(ok?' ok':'');}}
 function openScan(r){
-  SC.row=r;SC.busy=false;
+  SC.row=r;SC.busy=false;SC.devs=null;SC.di=-1;SC.zoom=1;SC.torch=false;SC.done=false;
   var o=document.createElement('div');o.id='scanBox';
-  o.innerHTML='<video id="scanVid" playsinline webkit-playsinline muted autoplay disablepictureinpicture></video><div class="sm" id="scanMsg">Đang mở camera...</div><div class="bt"><button type="button" id="scanSnap">Quét ngay</button><label>Chụp ảnh mã vạch<input id="scanPhoto" type="file" accept="image/*" capture="environment" hidden></label><button type="button" id="scanClose">Đóng</button></div>';
+  o.innerHTML='<div class="sh"><div class="tt">Quét mã vạch sản phẩm</div>'
+   +'<div class="vb"><video id="scanVid" playsinline webkit-playsinline muted autoplay disablepictureinpicture></video><div class="fr"></div></div>'
+   +'<div class="ctl"><button type="button" id="scanSw">🔄 Đổi camera</button><button type="button" id="scanZm">🔍 1x</button><button type="button" id="scanTc">💡 Đèn</button></div>'
+   +'<div class="sm" id="scanMsg">Đang mở camera...</div>'
+   +'<button type="button" class="big" id="scanSnap">📸 Chụp &amp; quét</button>'
+   +'<div class="bt"><label>Hoặc chụp ảnh mã vạch<input id="scanPhoto" type="file" accept="image/*" capture="environment" hidden></label><button type="button" id="scanClose">Đóng</button></div></div>';
   document.body.appendChild(o);
-  $('scanClose').onclick=closeScan;$('scanSnap').onclick=function(){if(SC.snap)SC.snap();};
+  $('scanClose').onclick=closeScan;
+  $('scanSnap').onclick=function(){if(SC.snap)SC.snap();};
+  $('scanSw').onclick=function(){switchCam();};
+  $('scanZm').onclick=function(){cycleZoom();};
+  $('scanTc').onclick=function(){toggleTorch();};
   $('scanPhoto').onchange=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;scMsg('Đang đọc ảnh...');
     var rd=new FileReader();rd.onload=function(){var img=new Image();img.onload=function(){
       var k=Math.min(1,1600/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      ensureDet(function(){decodeCanvas(cv).then(function(c){if(c)gotCode(c);else scMsg('Không đọc được mã. Chụp lại gần và rõ hơn, hoặc đóng và gõ vài số cuối barcode.');});});};img.src=rd.result;};rd.readAsDataURL(f);};
+      ensureDet(function(){decodeCanvas(cv).then(function(c){if(c)scDone(c);else scMsg('Không đọc được mã. Chụp lại gần và rõ hơn, hoặc đóng và gõ vài số cuối barcode.');});});};img.src=rd.result;};rd.readAsDataURL(f);};
   ensureDet(function(){startCam();});
 }
 function ensureDet(cb){
@@ -262,18 +271,44 @@ function ensureDet(cb){
   if(SC.det){cb();return;}
   loadZX(function(ok){if(!ok)scMsg('Không tải được bộ đọc mã. Kiểm tra mạng rồi thử lại.');cb();});
 }
-function startCam(){
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scMsg('Máy không mở được camera trực tiếp. Bấm "Chụp ảnh mã vạch".');return;}
-  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}},audio:false}).then(function(st){
-    SC.stream=st;var v=$('scanVid');if(!v){st.getTracks().forEach(function(t){t.stop();});return;}
+function stopStream(){
+  if(SC.timer){clearInterval(SC.timer);SC.timer=null;}
+  if(SC.stream){SC.stream.getTracks().forEach(function(t){t.stop();});SC.stream=null;}
+}
+function track(){return SC.stream&&SC.stream.getVideoTracks()[0];}
+function caps(){try{var t=track();return t&&t.getCapabilities?t.getCapabilities():{};}catch(e){return {};}}
+function switchCam(){
+  var go=function(){if(!SC.devs||SC.devs.length<2){scMsg('Máy chỉ có một camera');return;}SC.di=(SC.di+1)%SC.devs.length;stopStream();startCam(SC.devs[SC.di].deviceId);};
+  if(SC.devs){go();return;}
+  navigator.mediaDevices.enumerateDevices().then(function(l){SC.devs=l.filter(function(d){return d.kind==='videoinput';});var t=track(),cur=t&&t.getSettings?t.getSettings().deviceId:null;SC.di=Math.max(0,SC.devs.findIndex(function(d){return d.deviceId===cur;}));go();});
+}
+function cycleZoom(){
+  var c=caps();if(!c.zoom){scMsg('Máy không hỗ trợ zoom');return;}
+  var mx=c.zoom.max||1,st=[1,2,3].filter(function(z){return z<=mx;});if(st.length<2)st=[c.zoom.min||1,mx];
+  var i=st.indexOf(SC.zoom);SC.zoom=st[(i+1)%st.length];
+  track().applyConstraints({advanced:[{zoom:SC.zoom}]}).catch(function(){});
+  $('scanZm').textContent='🔍 '+(Math.round(SC.zoom*10)/10)+'x';
+}
+function toggleTorch(){
+  var c=caps();if(!c.torch){scMsg('Máy không hỗ trợ bật đèn');return;}
+  SC.torch=!SC.torch;track().applyConstraints({advanced:[{torch:SC.torch}]}).catch(function(){});
+  $('scanTc').style.background=SC.torch?'#fff3d6':'#f6f8f7';
+}
+function startCam(devId){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scMsg('Máy không mở được camera trực tiếp. Bấm "Hoặc chụp ảnh mã vạch".');return;}
+  var vc=devId?{deviceId:{exact:devId},width:{ideal:1920},height:{ideal:1080}}:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}};
+  navigator.mediaDevices.getUserMedia({video:vc,audio:false}).then(function(st){
+    SC.stream=st;var v=$('scanVid');if(!v){stopStream();return;}
     v.setAttribute('playsinline','');v.setAttribute('webkit-playsinline','');v.muted=true;v.controls=false;v.disablePictureInPicture=true;
     v.srcObject=st;
-    var pl=function(){var p=v.play();if(p&&p.catch)p.catch(function(){scMsg('Chạm vào màn hình một lần để bật camera');});};
+    var pl=function(){var p=v.play();if(p&&p.catch)p.catch(function(){scMsg('Chạm vào khung camera một lần để bật');});};
     v.onclick=pl;pl();
-    try{var tr=st.getVideoTracks()[0],cp=tr.getCapabilities?tr.getCapabilities():{};
-      if(cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)tr.applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(function(){});}catch(e){}
-    scMsg('Đưa mã vạch vào giữa màn hình, giữ cách 10-15cm, đủ sáng');
+    try{var cp=caps();if(cp.focusMode&&cp.focusMode.indexOf('continuous')>=0)track().applyConstraints({advanced:[{focusMode:'continuous'}]}).catch(function(){});}catch(e){}
+    scMsg('Đặt mã vạch vào khung xanh, cách 10-15cm');
     var cv=document.createElement('canvas'),n=0;
+    function vis(){var W=v.videoWidth,H=v.videoHeight,vb=v.parentNode,ba=vb.clientWidth/vb.clientHeight,va=W/H,w=W,h=H,x=0,y=0;
+      if(va>ba){w=Math.round(H*ba);x=Math.round((W-w)/2);}else{h=Math.round(W/ba);y=Math.round((H-h)/2);}
+      return {x:x,y:y,w:w,h:h};}
     function grab(sx,sy,sw,sh,maxW,enh){
       var k=Math.min(2,maxW/sw);cv.width=Math.round(sw*k);cv.height=Math.round(sh*k);
       var x=cv.getContext('2d');x.drawImage(v,sx,sy,sw,sh,0,0,cv.width,cv.height);
@@ -285,7 +320,8 @@ function startCam(){
       return cv;
     }
     function tryFrame(){
-      var W=v.videoWidth,H=v.videoHeight,cr=[[0,0,W,H,1280,false],[Math.round(W*.05),Math.round(H*.28),Math.round(W*.9),Math.round(H*.44),1600,true],[Math.round(W*.15),Math.round(H*.35),Math.round(W*.7),Math.round(H*.3),1400,true],[0,0,W,H,1280,true]];
+      var q=vis(),fx=q.x+Math.round(q.w*.1),fy=q.y+Math.round(q.h*.3),fw=Math.round(q.w*.8),fh=Math.round(q.h*.4);
+      var cr=[[fx,fy,fw,fh,1600,false],[fx,fy,fw,fh,1600,true],[q.x,q.y,q.w,q.h,1280,true],[q.x,q.y,q.w,q.h,1280,false]];
       var i=0;
       return (function next(){
         if(i>=cr.length)return Promise.resolve(null);
@@ -293,18 +329,23 @@ function startCam(){
         return decodeCanvas(grab(a[0],a[1],a[2],a[3],a[4],a[5])).then(function(c){return c||next();});
       })();
     }
-    SC.snap=function(){if(!v.videoWidth){scMsg('Camera chưa sẵn sàng, chạm vào màn hình rồi thử lại');return;}scMsg('Đang đọc khung hình...');tryFrame().then(function(c){if(c)gotCode(c);else scMsg('Chưa đọc được. Đưa mã vạch lại gần, giữ thẳng ngang, đủ sáng rồi bấm lại.');});};
+    SC.snap=function(){if(!v.videoWidth){scMsg('Camera chưa sẵn sàng, chạm vào khung camera rồi thử lại');return;}scMsg('Đang đọc...');tryFrame().then(function(c){if(c)scDone(c);else scMsg('Chưa đọc được. Đưa mã vạch lại gần, giữ thẳng ngang, đủ sáng rồi bấm lại.');});};
     SC.timer=setInterval(function(){
-      if(SC.busy)return;
-      if(!v.videoWidth||v.paused){scMsg('Camera chưa chạy ('+(v.videoWidth||0)+'px). Chạm vào màn hình để bật.');return;}
+      if(SC.busy||SC.done)return;
+      if(!v.videoWidth||v.paused){scMsg('Camera chưa chạy. Chạm vào khung camera để bật.');return;}
       SC.busy=true;n++;
-      tryFrame().then(function(c){SC.busy=false;if(c)gotCode(c);else scMsg('Đang quét... ('+n+') Đưa mã vạch vào giữa, cách 10-15cm');});
+      tryFrame().then(function(c){SC.busy=false;if(c)scDone(c);else if(!SC.done)scMsg('Đang quét... Đặt mã vạch vào khung xanh, cách 10-15cm');});
     },300);
-  }).catch(function(){scMsg('Không mở được camera trên trang này. Bấm "Chụp ảnh mã vạch" để chụp ảnh.');});
+  }).catch(function(){scMsg('Không mở được camera trên trang này. Bấm "Hoặc chụp ảnh mã vạch".');});
+}
+function scDone(c){
+  if(SC.done)return;SC.done=true;
+  scMsg('✔ Đã quét: '+c,true);
+  try{if(navigator.vibrate)navigator.vibrate(80);}catch(e){}
+  setTimeout(function(){gotCode(c);},600);
 }
 function closeScan(){
-  if(SC.timer){clearInterval(SC.timer);SC.timer=null;}
-  if(SC.stream){SC.stream.getTracks().forEach(function(t){t.stop();});SC.stream=null;}
+  stopStream();SC.done=true;
   var o=$('scanBox');if(o)o.remove();
 }
 function findSku(c){
