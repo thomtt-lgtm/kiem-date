@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kiểm date cửa hàng</title>
+<style>
+  :root{--g:#1b7a43;--bd:#d9e3dd;--mu:#62736a;--red:#b3261e;--yel:#9a6b00}
+  *{box-sizing:border-box}
+  body{margin:0;padding:14px 16px 80px;font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif;color:#1c2722;background:#f2f5f3}
+  .wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  h1{font-size:20px;margin:0}
+  .mu{color:var(--mu);font-size:13px}
+  .card{background:#fff;border:1px solid var(--bd);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:10px}
+  label{display:block;font-size:12px;color:var(--mu);margin-bottom:3px}
+  input,select,textarea{width:100%;padding:10px;border:1px solid var(--bd);border-radius:8px;font:inherit;background:#fff}
+  textarea{min-height:60px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .chk{display:flex;align-items:center;gap:10px;font-size:15px;color:#1c2722;margin:0}
+  .chk input{width:22px;height:22px;flex:none}
+  .row{border:1px solid var(--bd);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;position:relative}
+  .row .t{font-size:12px;color:var(--mu)}
+  .sg{position:absolute;left:10px;right:10px;top:62px;z-index:5;background:#fff;border:1px solid var(--bd);border-radius:8px;max-height:220px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.12)}
+  .sg div{padding:9px 10px;border-bottom:1px solid #eef2ef;font-size:14px}
+  .sg div:last-child{border:0}
+  .sg small{color:var(--mu)}
+  .b{display:inline-block;padding:2px 10px;border-radius:99px;font-size:12px;background:#eef2ef;color:var(--mu)}
+  .b.exp{background:#fde8e6;color:var(--red)} .b.red{background:#fde8e6;color:var(--red)} .b.yel{background:#fff3d6;color:var(--yel)} .b.ok{background:#e3f2e9;color:var(--g)}
+  .act{border-radius:8px;background:#fafbfa;border:1px dashed var(--bd);padding:8px;display:flex;flex-direction:column;gap:6px}
+  .act .hint{font-size:13px}
+  .rm{align-self:flex-end;background:none;border:0;color:var(--red);font:inherit;font-size:14px;padding:2px}
+  .btn{padding:13px;border:0;border-radius:8px;background:var(--g);color:#fff;font:inherit;font-weight:600;cursor:pointer}
+  .btn.sec{background:#fff;color:var(--g);border:1px solid var(--g)}
+  .btn:disabled{opacity:.5}
+  .seg{display:flex;gap:8px}
+  .seg label{flex:1;margin:0;padding:10px;border:1px solid var(--bd);border-radius:8px;text-align:center;font-size:14px;color:#1c2722;cursor:pointer}
+  .seg input{display:none}
+  .seg input:checked+span{font-weight:700;color:var(--g)}
+  .ph{display:flex;gap:8px;flex-wrap:wrap}
+  .ph img{width:64px;height:64px;object-fit:cover;border-radius:8px;border:1px solid var(--bd)}
+  .msg{padding:10px 12px;border-radius:8px;font-size:14px}
+  .ok2{background:#e3f2e9;color:var(--g)} .er{background:#fde8e6;color:var(--red)}
+  .bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--bd);padding:10px 16px}
+  .bar .in{max-width:560px;margin:0 auto;display:flex;gap:10px;align-items:center}
+  .bar .in .btn{flex:1}
+  [hidden]{display:none!important}
+</style>
+<style>@keyframes bl{0%,100%{background:#fdecea;border-color:#e24b4a}50%{background:#f5b5ae;border-color:#a32d2d}}.al{border:2px solid #e24b4a;border-radius:12px;padding:12px 14px;animation:bl 1.2s infinite;color:#501313}.al b{font-weight:500}.ai{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0;border-top:0.5px solid #f09595;font-size:14px}.ai .n{flex:1}.ai button{border:0.5px solid #a32d2d;background:#fff;color:#791F1F;border-radius:8px;padding:5px 10px;font-size:13px}</style>
+<style>.scan{display:block;margin:6px 0;padding:14px 12px;border:0;background:#2e7d32;color:#fff;border-radius:10px;font-size:16px;font-weight:500;text-align:center}#scanBox{position:fixed;inset:0;background:#000;z-index:99;display:flex;flex-direction:column}#scanBox video{width:100%;flex:1;min-height:0;object-fit:cover}#scanBox .sm{color:#fff;padding:10px 14px;font-size:14px;text-align:center}#scanBox .bt{display:flex;gap:10px;padding:0 14px 16px}#scanBox .bt>*{flex:1;padding:12px;border-radius:10px;border:0;font-size:15px;text-align:center;background:#fff;color:#111}</style>
+</head>
+<body>
+<div class="wrap">
+  <div><h1>Kiểm date cửa hàng</h1>
+  <div class="mu">Nhập tối thiểu <b id="minTxt">20</b> sản phẩm mỗi lần lưu. Kết quả tự lưu về file tổng hợp.</div></div>
+
+  <div class="card">
+    <div class="grid">
+      <div><label>Cửa hàng</label><select id="store"></select></div>
+      <div><label>Tên nhân viên</label><select id="checkerSel"></select><input id="checker" type="text" placeholder="Nhập tên" hidden style="margin-top:6px"></div>
+    </div>
+    <div><label>Quầy kiểm date</label><select id="group"></select></div>
+  </div>
+
+  <div id="alerts"></div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center"><b>Kiểm date ngẫu nhiên</b><span class="mu" id="cnt">0/20</span></div>
+    <label class="chk"><input type="checkbox" id="noexp"> Không còn hàng hết hạn trên kệ</label>
+    <div id="rows" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button class="btn sec" id="add" type="button">+ Thêm dòng</button>
+  </div>
+
+  <div class="card">
+    <div><label>Ghi chú</label><textarea id="note"></textarea></div>
+    <div>
+      <label>Ảnh (không bắt buộc, tối đa 8 ảnh)</label>
+      <input id="photos" type="file" accept="image/*" multiple>
+      <div class="ph" id="thumbs"></div>
+    </div>
+  </div>
+  <div id="msg" class="msg" hidden></div>
+</div>
+<div class="bar"><div class="in"><button class="btn" id="save">Lưu kết quả</button></div></div>
+
+<script>
+(function(){var API='https://script.google.com/macros/s/AKfycbw6iWhg4KMj87aRt-nSIcmmlaCyTMEAUXWhQKDeJsGYOJyIrVQc76Pe0OV1JSSmQPyd/exec';
+function mk(ok,fail){return new Proxy({},{get:function(_,name){
+ if(name==='withSuccessHandler')return function(f){return mk(f,fail);};
+ if(name==='withFailureHandler')return function(f){return mk(ok,f);};
+ return function(){var a=[].slice.call(arguments),get=(name==='getConfig'||name==='getAlerts');
+  var q=get?fetch(API+'?api='+name+'&arg='+encodeURIComponent(JSON.stringify(a))):fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({api:name,args:a})});
+  q.then(function(r){return r.json();}).then(function(j){if(j.ok){if(ok)ok(j.data);}else if(fail)fail({message:j.error});}).catch(function(e){if(fail)fail(e);});};}});}
+window.google={script:{run:mk(null,null)}};})();
+</script>
+<script>
+var PHOTOS=[], SKU=[], MIN=20, N=0, STAFF={};
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function show(t,ok){var m=$('msg');m.textContent=t;m.className='msg '+(ok?'ok2':'er');m.hidden=false;window.scrollTo(0,document.body.scrollHeight);}
+function fillStaff(){
+  var st=$('store').value,l=STAFF[st]||[],s=$('checkerSel');
+  s.innerHTML='<option value="">Chọn nhân viên</option>'+l.map(function(x){return '<option>'+esc(x)+'</option>';}).join('')+'<option value="__o">Khác (nhập tên)</option>';
+  $('checker').hidden=true;
+}
+$('store').addEventListener('change',function(){fillStaff();loadAlerts();});
+$('checkerSel').addEventListener('change',function(e){$('checker').hidden=e.target.value!=='__o';});
+function who(){var v=$('checkerSel').value;return v==='__o'?$('checker').value:v;}
+function fill(sel,items,ph){sel.innerHTML='<option value="">'+ph+'</option>'+items.map(function(v){return '<option>'+esc(v)+'</option>';}).join('');}
+function todayMs(){var d=new Date();return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate());}
+function iso(v){var d=String(v||'').replace(/\D/g,'');if(d.length!==6&&d.length!==8)return '';var dd=+d.slice(0,2),mo=+d.slice(2,4),y=d.length===6?2000+ +d.slice(4):+d.slice(4);if(mo<1||mo>12||dd<1||dd>31)return '';var x=new Date(Date.UTC(y,mo-1,dd));if(x.getUTCMonth()!==mo-1)return '';return y+'-'+('0'+mo).slice(-2)+'-'+('0'+dd).slice(-2);}
+function hsMask(v){var d=String(v).replace(/\D/g,'').slice(0,8),o=d.slice(0,2);if(d.length>2)o+='/'+d.slice(2,4);if(d.length>4)o+='/'+d.slice(4);return o;}
+function vn(s){var p=s.split('-');return p[2]+'/'+p[1]+'/'+p[0];}
+function daysLeft(v){v=iso(v);if(!v)return null;var p=v.split('-');return Math.round((Date.UTC(+p[0],+p[1]-1,+p[2])-todayMs())/86400000);}
+
+function addRow(){
+  N++;
+  var d=document.createElement('div');d.className='row';
+  d.innerHTML='<div class="t">Sản phẩm</div>'
+   +'<label class="scan">📷 Quét mã vạch<input class="scf" type="file" accept="image/*" capture="environment" hidden></label><div class="sst" style="font-size:13px;color:#a32d2d"></div>'
+   +'<div class="hint2" style="font-size:13px;color:#555;margin:2px 0 4px">Không quét được thì gõ tên, mã SP hoặc barcode:</div>'
+   +'<input class="nm" type="text" placeholder="Gõ tên, mã SP hoặc barcode" autocomplete="off">'
+   +'<div class="sg" hidden></div>'
+   +'<div class="grid"><div><label>Hạn sử dụng (HSD)</label><input class="hs" type="text" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10"></div>'
+   +'<div><label>Số lượng</label><input class="qt" type="number" inputmode="decimal" step="any" min="0" placeholder="Nhập SL"></div></div>'
+   +'<div>Còn lại: <span class="bd b">Chưa nhập HSD</span></div>'
+   +'<div class="act" hidden><div class="hint"></div><div><label>Hướng xử lý</label><select class="ac"></select></div></div>'
+   +'<button class="rm" type="button">Xóa dòng</button>';
+  d.dataset.code='';
+  $('rows').appendChild(d);
+  renum();
+}
+function renum(){
+  var rs=$('rows').children;
+  for(var i=0;i<rs.length;i++)rs[i].querySelector('.t').textContent=(i+1)+'. Sản phẩm';
+  upd();
+}
+var ACT={
+ exp:{h:'Hết hạn: rút khỏi kệ ngay, để khu riêng, lập biên bản hủy, báo ASM.',o:['Đã rút khỏi kệ + lập biên bản hủy','Chưa xử lý']},
+ red:{h:'Đỏ (≤7 ngày): đưa ra vị trí dễ thấy, ưu tiên bán/xuống mã, kiểm hằng ngày.',o:['Đã đưa ra vị trí dễ thấy','Đã đẩy bán / xuống mã','Chưa xử lý']},
+ yel:{h:'Vàng (≤30 ngày): xoay vòng FIFO, theo dõi hằng tuần.',o:['Đã xoay vòng FIFO','Chưa xử lý']}
+};
+function upd(){
+  var rs=$('rows').children,c=0;
+  for(var i=0;i<rs.length;i++){
+    var r=rs[i],nm=r.querySelector('.nm').value.trim(),hs=r.querySelector('.hs').value,b=r.querySelector('.bd');
+    var dl=daysLeft(hs),lv='';
+    if(dl===null){var nd=hs.replace(/\D/g,'').length;if(nd>=6){b.className='bd b exp';b.textContent='Ngày chưa đúng';}else{b.className='bd b';b.textContent='Chưa nhập HSD';}}
+    else if(dl<0){b.className='bd b exp';b.textContent='Đã hết hạn '+(-dl)+' ngày';lv='exp';}
+    else if(dl<=7){b.className='bd b red';b.textContent=dl+' ngày (Đỏ)';lv='red';}
+    else if(dl<=30){b.className='bd b yel';b.textContent=dl+' ngày (Vàng)';lv='yel';}
+    else{b.className='bd b ok';b.textContent=dl+' ngày';}
+    var box=r.querySelector('.act');
+    if((r.dataset.lv||'')!==lv){
+      r.dataset.lv=lv;
+      if(lv){var a=ACT[lv],s=r.querySelector('.ac');box.querySelector('.hint').textContent=a.h;
+        s.innerHTML='<option value="">Chọn hướng xử lý</option>'+a.o.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');}
+    }
+    box.hidden=!lv;
+    if(nm&&dl!==null)c++;
+  }
+  $('cnt').textContent=c+'/'+MIN;
+}
+$('rows').addEventListener('input',function(e){
+  var r=e.target.closest('.row');if(!r)return;
+  if(e.target.classList.contains('hs'))e.target.value=hsMask(e.target.value);
+  if(e.target.classList.contains('nm')){
+    r.dataset.code='';
+    var q=e.target.value.trim().toLowerCase(),sg=r.querySelector('.sg');
+    if(q.length<2){sg.hidden=true;upd();return;}
+    var out=[];
+    for(var i=0;i<SKU.length&&out.length<8;i++){var s=SKU[i];if(s[0].toLowerCase().indexOf(q)>=0||s[1].toLowerCase().indexOf(q)>=0||(s[2]&&s[2].slice(-q.length)===q))out.push(s);}
+    sg.innerHTML=out.map(function(s,i){return '<div data-i="'+i+'">'+esc(s[1])+'<br><small>'+esc(s[0])+(s[2]?' · '+esc(s[2]):'')+'</small></div>';}).join('');
+    sg._o=out;sg.hidden=!out.length;
+  }
+  upd();
+});
+$('rows').addEventListener('click',function(e){
+  var r=e.target.closest('.row');if(!r)return;
+  var it=e.target.closest('.sg div');
+  if(it){var sg=r.querySelector('.sg'),s=sg._o[+it.dataset.i];r.querySelector('.nm').value=s[1];r.dataset.code=s[0];sg.hidden=true;upd();return;}
+  if(e.target.classList.contains('rm')){r.remove();renum();}
+});
+$('add').addEventListener('click',addRow);
+
+google.script.run.withSuccessHandler(function(cfg){
+  MIN=cfg.min;$('minTxt').textContent=MIN;
+  fill($('store'),cfg.stores,'Chọn cửa hàng');fill($('group'),cfg.groups,'Chọn quầy');
+  STAFF=cfg.staff||{};
+  SKU=(cfg.sku||'').split('\n').filter(String).map(function(l){return l.split('|');});
+  try{$('store').value=localStorage.getItem('kd_store')||'';fillStaff();loadAlerts();var k=localStorage.getItem('kd_checker')||'';if(k&&[].slice.call($('checkerSel').options).some(function(x){return x.value===k;}))$('checkerSel').value=k;}catch(e){}
+  for(var i=0;i<MIN;i++)addRow();
+  try{ensureDet(function(){});}catch(e){}
+}).withFailureHandler(function(){show('Không tải được dữ liệu. Kiểm tra mạng rồi tải lại trang.',false);}).getConfig();
+
+$('photos').addEventListener('change',function(e){
+  var files=Array.prototype.slice.call(e.target.files).slice(0,8);
+  PHOTOS=[];$('thumbs').innerHTML='';
+  files.forEach(function(f){var r=new FileReader();r.onload=function(){var img=new Image();img.onload=function(){
+    var s=Math.min(1,1280/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);var u=c.toDataURL('image/jpeg',0.7);
+    PHOTOS.push({data:u.split(',')[1]});var t=document.createElement('img');t.src=u;$('thumbs').appendChild(t);};img.src=r.result;};r.readAsDataURL(f);});
+});
+
+$('save').addEventListener('click',function(){
+  var lines=[],rs=$('rows').children;
+  for(var i=0;i<rs.length;i++){var r=rs[i];lines.push({code:r.dataset.code||'',name:r.querySelector('.nm').value,hsd:iso(r.querySelector('.hs').value),qty:r.querySelector('.qt').value,act:r.querySelector('.ac').value});}
+  var p={store:$('store').value,checker:who(),group:$('group').value,noExpired:$('noexp').checked,lines:lines,note:$('note').value,photos:PHOTOS};
+  var btn=$('save');btn.disabled=true;btn.textContent='Đang lưu...';$('msg').hidden=true;
+  google.script.run
+   .withSuccessHandler(function(res){
+     try{localStorage.setItem('kd_store',p.store);localStorage.setItem('kd_checker',$('checkerSel').value);}catch(e){}
+     $('rows').innerHTML='';for(var i=0;i<MIN;i++)addRow();
+     $('note').value='';$('noexp').checked=false;$('photos').value='';$('thumbs').innerHTML='';PHOTOS=[];
+     btn.disabled=false;btn.textContent='Lưu kết quả';
+     show('Đã lưu '+res.lines+' sản phẩm lúc '+res.time+(res.expired?' (có '+res.expired+' SP hết hạn)':'')+'. Kiểm tiếp quầy khác thì chọn quầy rồi nhập tiếp.',true);
+   })
+   .withFailureHandler(function(err){btn.disabled=false;btn.textContent='Lưu kết quả';show((err&&err.message?err.message:String(err)).replace(/^Error:\s*/,''),false);})
+   .saveCheck(p);
+});
+
+function loadAlerts(){var st=$('store').value,box=$('alerts');if(!st){box.innerHTML='';return;}
+google.script.run.withSuccessHandler(function(a){renderAlerts(st,a||[]);}).withFailureHandler(function(){}).getAlerts(st);}
+function renderAlerts(st,a){var box=$('alerts');if(!a.length){box.innerHTML='';return;}
+var h='<div class="al"><b>Cần xử lý: '+a.length+' sản phẩm sắp hết hạn hoặc đã hết hạn</b>';
+a.forEach(function(o,i){var t=o.days<0?'Đã quá hạn '+(-o.days)+' ngày':o.days===0?'Hết hạn hôm nay':'Còn '+o.days+' ngày';
+h+='<div class="ai" id="ai'+i+'"><div class="n">'+esc(o.name)+'<br><span style="font-size:12px">HSD '+o.hsd+' - '+t+'</span></div><button type="button" data-i="'+i+'">Đã xử lý</button></div>';});
+box.innerHTML=h+'</div>';
+[].slice.call(box.querySelectorAll('button')).forEach(function(b){b.onclick=function(){var o=a[+b.dataset.i],row=$('ai'+b.dataset.i);
+var opts=[].slice.call($('checkerSel').options).filter(function(x){return x.value!==''&&x.value!=='__o';}).map(function(x){return '<option>'+esc(x.text)+'</option>';}).join('');
+var who=opts?'<select class="aw" style="width:100%;margin:6px 0;padding:8px;border-radius:8px"><option value="">Ai đã xử lý?</option>'+opts+'</select>':'<input class="aw" placeholder="Tên người xử lý" style="width:100%;margin:6px 0;padding:8px;border-radius:8px;box-sizing:border-box">';
+var how='<select class="ah" style="width:100%;margin-bottom:6px;padding:8px;border-radius:8px"><option value="">Đã xử lý bằng cách nào?</option><option>Đã rút khỏi kệ</option><option>Đã xuống mã / đẩy bán</option><option>Đã bán hết</option><option>Đã hủy + lập biên bản</option></select>';
+row.innerHTML='<div style="width:100%"><div>'+esc(o.name)+'</div>'+who+how+'<div style="display:flex;gap:8px"><button type="button" class="ok">Xác nhận</button><button type="button" class="no">Hủy</button></div></div>';
+row.querySelector('.no').onclick=function(){renderAlerts(st,a);};
+row.querySelector('.ok').onclick=function(){var w=row.querySelector('.aw').value.trim(),h2=row.querySelector('.ah').value;
+if(!w||!h2){alert('Chọn người xử lý và cách xử lý.');return;}
+var bt=row.querySelector('.ok');bt.disabled=true;bt.textContent='...';
+google.script.run.withSuccessHandler(function(){loadAlerts();}).withFailureHandler(function(){bt.disabled=false;bt.textContent='Xác nhận';}).resolveAlert({store:st,k:o.k,iso:o.iso,who:w,how:h2});};};});}
+
+var ZX=null,SC={row:null,stream:null,timer:null,busy:false,det:null};
+function loadZX(cb){if(window.ZXing){ZX=window.ZXing;cb(true);return;}var s=document.createElement('script');s.src='https://unpkg.com/@zxing/library@0.21.3/umd/index.min.js';s.onload=function(){ZX=window.ZXing;cb(!!ZX);};s.onerror=function(){cb(false);};document.head.appendChild(s);}
+function zxDecode(cv){try{var hs=new Map();hs.set(ZX.DecodeHintType.TRY_HARDER,true);var rd=new ZX.MultiFormatReader();rd.setHints(hs);return rd.decode(new ZX.BinaryBitmap(new ZX.HybridBinarizer(new ZX.HTMLCanvasElementLuminanceSource(cv)))).getText();}catch(e){return null;}}
+function decodeCanvas(cv){
+  if(SC.det)return SC.det.detect(cv).then(function(r){return r&&r.length?r[0].rawValue:null;}).catch(function(){return null;});
+  if(!ZX)return Promise.resolve(null);
+  return Promise.resolve(zxDecode(cv));
+}
+function scMsg(t){var e=$('scanMsg');if(e)e.textContent=t;}
+function openScan(r){
+  SC.row=r;SC.busy=false;
+  var o=document.createElement('div');o.id='scanBox';
+  o.innerHTML='<video id="scanVid" playsinline muted autoplay></video><div class="sm" id="scanMsg">Đang mở camera...</div><div class="bt"><label>Chụp ảnh mã vạch<input id="scanPhoto" type="file" accept="image/*" capture="environment" hidden></label><button type="button" id="scanClose">Đóng</button></div>';
+  document.body.appendChild(o);
+  $('scanClose').onclick=closeScan;
+  $('scanPhoto').onchange=function(e){var f=e.target.files&&e.target.files[0];if(!f)return;scMsg('Đang đọc ảnh...');
+    var rd=new FileReader();rd.onload=function(){var img=new Image();img.onload=function(){
+      var k=Math.min(1,1600/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+      ensureDet(function(){decodeCanvas(cv).then(function(c){if(c)gotCode(c);else scMsg('Không đọc được mã. Chụp lại gần và rõ hơn, hoặc đóng và gõ vài số cuối barcode.');});});};img.src=rd.result;};rd.readAsDataURL(f);};
+  ensureDet(function(){startCam();});
+}
+function ensureDet(cb){
+  if(window.BarcodeDetector&&!SC.det){try{SC.det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e','code_128','code_39','itf','qr_code']});}catch(e){SC.det=null;}}
+  if(SC.det){cb();return;}
+  loadZX(function(ok){if(!ok)scMsg('Không tải được bộ đọc mã. Kiểm tra mạng rồi thử lại.');cb();});
+}
+function startCam(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){scMsg('Máy không mở được camera trực tiếp. Bấm "Chụp ảnh mã vạch".');return;}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false}).then(function(st){
+    SC.stream=st;var v=$('scanVid');if(!v){st.getTracks().forEach(function(t){t.stop();});return;}
+    v.srcObject=st;v.play();scMsg('Đưa mã vạch vào giữa màn hình');
+    var cv=document.createElement('canvas');
+    SC.timer=setInterval(function(){
+      if(SC.busy||!v.videoWidth)return;
+      var k=Math.min(1,900/v.videoWidth);cv.width=Math.round(v.videoWidth*k);cv.height=Math.round(v.videoHeight*k);cv.getContext('2d').drawImage(v,0,0,cv.width,cv.height);
+      SC.busy=true;decodeCanvas(cv).then(function(c){SC.busy=false;if(c)gotCode(c);});
+    },350);
+  }).catch(function(){scMsg('Không mở được camera trên trang này. Bấm "Chụp ảnh mã vạch" để chụp ảnh.');});
+}
+function closeScan(){
+  if(SC.timer){clearInterval(SC.timer);SC.timer=null;}
+  if(SC.stream){SC.stream.getTracks().forEach(function(t){t.stop();});SC.stream=null;}
+  var o=$('scanBox');if(o)o.remove();
+}
+function findSku(c){
+  var d=String(c).replace(/\D/g,''),z=d.replace(/^0+/,'');if(!d)return null;
+  for(var i=0;i<SKU.length;i++){var s=SKU[i],b=String(s[2]||'').replace(/\D/g,'');
+    if(s[0]===d||s[0]===String(c))return s;
+    if(b&&(b===d||b.replace(/^0+/,'')===z))return s;}
+  return null;
+}
+function gotCode(c){
+  var r=SC.row;closeScan();if(!r)return;
+  try{if(navigator.vibrate)navigator.vibrate(80);}catch(e){}
+  var s=findSku(c),nm=r.querySelector('.nm');
+  if(s){nm.value=s[1];r.dataset.code=s[0];r.querySelector('.sg').hidden=true;upd();var h=r.querySelector('.hs');if(h)h.focus();}
+  else{nm.value=String(c).replace(/\D/g,'');nm.dispatchEvent(new Event('input',{bubbles:true}));alert('Không tìm thấy mã '+c+' trong danh mục. Chọn sản phẩm trong gợi ý hoặc gõ tên.');}
+}
+
+$('rows').addEventListener('change',function(e){
+  if(!e.target.classList||!e.target.classList.contains('scf'))return;
+  var r=e.target.closest('.row'),f=e.target.files&&e.target.files[0],st=r.querySelector('.sst');
+  if(!f)return;SC.row=r;st.textContent='Đang đọc mã vạch...';
+  var rd=new FileReader();rd.onload=function(){var img=new Image();img.onload=function(){
+    ensureDet(function(){
+      var sizes=[1600,1000,2400],i=0;
+      (function next(){
+        if(i>=sizes.length){st.textContent='Không đọc được mã. Chụp lại gần, rõ, đủ sáng, hoặc gõ vài số cuối barcode.';e.target.value='';return;}
+        var k=Math.min(1,sizes[i++]/Math.max(img.width,img.height)),cv=document.createElement('canvas');
+        cv.width=Math.round(img.width*k);cv.height=Math.round(img.height*k);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
+        decodeCanvas(cv).then(function(c){if(c){st.textContent='';e.target.value='';gotCode(c);}else next();});
+      })();
+    });};img.onerror=function(){st.textContent='Không mở được ảnh, thử lại.';};img.src=rd.result;};
+  rd.readAsDataURL(f);
+});
+
+$('rows').addEventListener('click',function(e){
+  var lb=e.target.closest&&e.target.closest('label.scan');
+  if(lb&&navigator.mediaDevices&&navigator.mediaDevices.getUserMedia){e.preventDefault();openScan(lb.closest('.row'));}
+},true);
+</script>
+</body>
+</html>
