@@ -20,6 +20,8 @@
   .chk input{width:22px;height:22px;flex:none}
   .row{border:1px solid var(--bd);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;position:relative}
   .row .t{font-size:12px;color:var(--mu)}
+  .row .act.need select{border:2px solid #e65100;background:#fff3e0}
+  .row .act.need label{color:#e65100;font-weight:700}
   .row.bad{border:2px solid #d32f2f;background:#fdecea}
   .sg{position:absolute;left:10px;right:10px;top:62px;z-index:5;background:#fff;border:1px solid var(--bd);border-radius:8px;max-height:220px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.12)}
   .sg div{padding:9px 10px;border-bottom:1px solid #eef2ef;font-size:14px}
@@ -157,6 +159,11 @@ function upd(){
         s.innerHTML='<option value="">Chọn hướng xử lý</option>'+a.o.map(function(x){return '<option>'+esc(x)+'</option>';}).join('');}
     }
     box.hidden=!lv;
+    var needAct=(lv==='exp'||lv==='red')&&!r.querySelector('.ac').value;
+    box.classList.toggle('need',needAct);
+    var lb=box.querySelector('label');if(lb)lb.textContent=needAct?'Hướng xử lý (BẮT BUỘC chọn)':'Hướng xử lý';
+    if(needAct&&r.dataset.sc!==lv&&document.activeElement&&document.activeElement.classList.contains('hs')&&r.querySelector('.hs').value.replace(/\D/g,'').length>=6){r.dataset.sc=lv;setTimeout(function(){box.scrollIntoView({block:'nearest',behavior:'smooth'});},150);}
+    if(!needAct)r.dataset.sc='';
     if(nm&&dl!==null)c++;
   }
   $('cnt').textContent=c+'/'+MIN;
@@ -181,6 +188,7 @@ $('rows').addEventListener('click',function(e){
   if(it){var sg=r.querySelector('.sg'),s=sg._o[+it.dataset.i];r.querySelector('.nm').value=s[1];r.dataset.code=s[0];sg.hidden=true;upd();return;}
   if(e.target.classList.contains('rm')){r.remove();renum();}
 });
+$('rows').addEventListener('change',function(e){if(e.target.classList.contains('ac'))upd();});
 $('add').addEventListener('click',addRow);
 
 google.script.run.withSuccessHandler(function(cfg){
@@ -205,6 +213,13 @@ $('photos').addEventListener('change',function(e){
 $('save').addEventListener('click',function(){
   var lines=[],rs=$('rows').children;
   for(var i=0;i<rs.length;i++){var r=rs[i];lines.push({code:r.dataset.code||'',name:r.querySelector('.nm').value,hsd:iso(r.querySelector('.hs').value),qty:r.querySelector('.qt').value,act:r.querySelector('.ac').value});}
+  var probs=[],first=null,filled=0;
+  [].slice.call(rs).forEach(function(r,i){r.classList.remove('bad');var nm=r.querySelector('.nm').value.trim(),hsRaw=r.querySelector('.hs').value.trim();
+    if(!nm&&!hsRaw)return;var why='';var h=iso(hsRaw),q=parseFloat(String(r.querySelector('.qt').value).replace(',','.')),dl=daysLeft(hsRaw);
+    if(!nm)why='chưa nhập sản phẩm';else if(!h)why='chưa nhập HSD';else if(isNaN(q)||q<=0)why='chưa nhập số lượng';else if(dl<=7&&!r.querySelector('.ac').value)why='chưa chọn hướng xử lý';
+    if(why){r.classList.add('bad');probs.push((i+1)+' ('+why+')');if(!first)first=r;}else filled++;});
+  if(probs.length){show('Chưa lưu được. '+probs.length+' dòng cần sửa (đang tô đỏ): dòng '+probs.slice(0,8).join(', ')+(probs.length>8?'...':'')+'.',false);first.scrollIntoView({block:'center'});return;}
+  if(filled<MIN){show('Cần nhập tối thiểu '+MIN+' sản phẩm. Hiện mới có '+filled+' sản phẩm hợp lệ.',false);return;}
   var p={store:$('store').value,checker:who(),group:$('group').value,noExpired:$('noexp').checked,lines:lines,note:$('note').value,photos:PHOTOS};
   var btn=$('save');btn.disabled=true;btn.textContent='Đang lưu...';$('msg').hidden=true;
   google.script.run
