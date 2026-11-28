@@ -20,6 +20,7 @@
   .chk input{width:22px;height:22px;flex:none}
   .row{border:1px solid var(--bd);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px;position:relative}
   .row .t{font-size:12px;color:var(--mu)}
+  .row.bad{border:2px solid #d32f2f;background:#fdecea}
   .sg{position:absolute;left:10px;right:10px;top:62px;z-index:5;background:#fff;border:1px solid var(--bd);border-radius:8px;max-height:220px;overflow:auto;box-shadow:0 6px 18px rgba(0,0,0,.12)}
   .sg div{padding:9px 10px;border-bottom:1px solid #eef2ef;font-size:14px}
   .sg div:last-child{border:0}
@@ -214,7 +215,15 @@ $('save').addEventListener('click',function(){
      btn.disabled=false;btn.textContent='Lưu kết quả';
      show('Đã lưu '+res.lines+' sản phẩm lúc '+res.time+(res.expired?' (có '+res.expired+' SP hết hạn)':'')+'. Kiểm tiếp quầy khác thì chọn quầy rồi nhập tiếp.',true);
    })
-   .withFailureHandler(function(err){btn.disabled=false;btn.textContent='Lưu kết quả';show((err&&err.message?err.message:String(err)).replace(/^Error:\s*/,''),false);})
+   .withFailureHandler(function(err){btn.disabled=false;btn.textContent='Lưu kết quả';
+     var t=(err&&err.message?err.message:String(err)).replace(/^Error:\s*/,'');
+     [].slice.call($('rows').children).forEach(function(x){x.classList.remove('bad');});
+     var mm=/Dòng (\d+)/.exec(t);
+     if(mm){var rr=$('rows').children[+mm[1]-1];if(rr){rr.classList.add('bad');t+=' (dòng đang tô đỏ)';}}
+     else if(/tối thiểu/.test(t)){var n=0;[].slice.call($('rows').children).forEach(function(x){if(x.querySelector('.nm').value.trim())n++;});t+=' Hiện mới có '+n+' sản phẩm.';}
+     else if(/Failed to fetch|NetworkError|Load failed/i.test(t))t='Mất kết nối mạng hoặc ảnh quá nặng, chưa lưu. Kiểm tra sóng rồi bấm Lưu lại (dữ liệu vẫn còn trên màn hình).';
+     show(t,false);
+     if(mm){var r2=$('rows').children[+mm[1]-1];if(r2)r2.scrollIntoView({block:'center'});}})
    .saveCheck(p);
 });
 
