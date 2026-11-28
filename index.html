@@ -215,8 +215,10 @@ $('save').addEventListener('click',function(){
   for(var i=0;i<rs.length;i++){var r=rs[i];lines.push({code:r.dataset.code||'',name:r.querySelector('.nm').value,hsd:iso(r.querySelector('.hs').value),qty:r.querySelector('.qt').value,act:r.querySelector('.ac').value});}
   var probs=[],first=null,filled=0;
   [].slice.call(rs).forEach(function(r,i){r.classList.remove('bad');var nm=r.querySelector('.nm').value.trim(),hsRaw=r.querySelector('.hs').value.trim();
-    if(!nm&&!hsRaw)return;var why='';var h=iso(hsRaw),q=parseFloat(String(r.querySelector('.qt').value).replace(',','.')),dl=daysLeft(hsRaw);
-    if(!nm)why='chưa nhập sản phẩm';else if(!h)why='chưa nhập HSD';else if(isNaN(q)||q<=0)why='chưa nhập số lượng';else if(dl<=7&&!r.querySelector('.ac').value)why='chưa chọn hướng xử lý';
+    if(!nm&&!hsRaw)return;var why='';
+    if(nm&&!r.dataset.code&&/^\d{4,}$/.test(nm)){var fs=findSku(nm);if(fs){r.querySelector('.nm').value=fs[1];r.dataset.code=fs[0];nm=fs[1];}else{why='mã '+nm+' chưa có trong danh mục, hãy gõ tên rồi chọn sản phẩm trong gợi ý';}}
+    if(!why&&nm&&!r.dataset.code&&!/\D/.test(nm.replace(/\s/g,''))){why='chưa chọn sản phẩm trong gợi ý';}var h=iso(hsRaw),q=parseFloat(String(r.querySelector('.qt').value).replace(',','.')),dl=daysLeft(hsRaw);
+    if(why){}else if(!nm)why='chưa nhập sản phẩm';else if(!h)why='chưa nhập HSD';else if(isNaN(q)||q<=0)why='chưa nhập số lượng';else if(dl<=7&&!r.querySelector('.ac').value)why='chưa chọn hướng xử lý';
     if(why){r.classList.add('bad');probs.push((i+1)+' ('+why+')');if(!first)first=r;}else filled++;});
   if(probs.length){show('Chưa lưu được. '+probs.length+' dòng cần sửa (đang tô đỏ): dòng '+probs.slice(0,8).join(', ')+(probs.length>8?'...':'')+'.',false);first.scrollIntoView({block:'center'});return;}
   if(filled<MIN){show('Cần nhập tối thiểu '+MIN+' sản phẩm. Hiện mới có '+filled+' sản phẩm hợp lệ.',false);return;}
